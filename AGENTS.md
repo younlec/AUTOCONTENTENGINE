@@ -2,17 +2,29 @@
 
 ## Cursor Cloud specific instructions
 
-This repository is currently a greenfield project with no application code, dependencies, or build tooling.
+### Project overview
+AutoContent Engine — a NestJS backend SaaS platform for content discovery, creation, scheduling, posting, and monetization across social platforms. Single service at `backend/`.
 
-### Repository contents (as of initial setup)
-- `README.md` — One-line product description: automates content discovery, creation, scheduling, posting, and monetization across social platforms.
-- `Home` — Empty placeholder file.
-- `index` — Empty placeholder file.
+### Services required
+- **PostgreSQL** (port 5432): `sudo service postgresql start`. Database `autocontent`, user `postgres`/`postgres`.
+- **Redis** (port 6379): `sudo service redis-server start`. Used by BullMQ job queues.
+- **NestJS backend** (port 4000): `npm run start:dev` from `backend/`. Swagger docs at `/api/docs`.
 
-### Development environment
-- No package manager, build system, or dependency files exist yet (`package.json`, `requirements.txt`, etc.).
-- No lint, test, or build commands are configured.
-- No services to start or ports to expose.
+### Key commands (all run from `backend/`)
+| Task | Command |
+|------|---------|
+| Install deps | `npm install` |
+| Generate Prisma client | `npx prisma generate` |
+| Run migrations | `npx prisma migrate dev` |
+| Lint | `npm run lint` |
+| Unit tests | `npm test` |
+| E2E tests | `npm run test:e2e` (requires running DB + Redis) |
+| Build | `npm run build` |
+| Dev server | `npm run start:dev` |
 
-### What to do when code is added
-Once the project scaffolding is committed (e.g. a `package.json`, `pyproject.toml`, `docker-compose.yml`, etc.), the update script and these instructions should be revised to reflect the actual stack and commands.
+### Gotchas
+- PostgreSQL and Redis must be running before starting the dev server or running E2E tests. Unit tests (`npm test`) do not require them.
+- After any change to `prisma/schema.prisma`, run `npx prisma migrate dev` then `npx prisma generate`.
+- BullMQ queues (content-discovery, video-creation, post-scheduling) silently fail to connect if Redis is down; the app still starts but queue-dependent features won't work.
+- AI generation endpoints return mock content when `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` are set to placeholder values (the default `.env`).
+- The `.env` file has working dev defaults; no external secrets are needed for local development.
