@@ -3,7 +3,7 @@
 ## Cursor Cloud specific instructions
 
 ### Project overview
-AutoContent Engine — a NestJS backend SaaS platform for content discovery, creation, scheduling, posting, and monetization across social platforms. Single service at `backend/`.
+AutoContent Engine — a full-stack SaaS platform for content discovery, creation, scheduling, posting, and monetization across social platforms. Backend at `backend/`, frontend at `frontend/`, Docker configs at `docker/`.
 
 ### Services required
 - **PostgreSQL** (port 5432): `sudo service postgresql start`. Database `autocontent`, user `postgres`/`postgres`.
@@ -42,3 +42,15 @@ AutoContent Engine — a NestJS backend SaaS platform for content discovery, cre
 | Lint | `npm run lint` |
 | Build | `npm run build` |
 | Dev server | `npm run dev` |
+
+### Docker (production)
+- `docker-compose.yml` at repo root defines: postgres, redis, backend, frontend, nginx.
+- For **local dev**, use native PostgreSQL + Redis (see above) rather than Docker containers.
+- Docker is only needed for production builds: `sudo docker compose up -d`
+
+### Architecture notes
+- Backend uses NestJS 10 modular architecture: 13 modules under `backend/src/` (auth, users, social-accounts, content-discovery, ai-generation, video-creation, content, scheduling, publishing, analytics, monetization, prisma, events).
+- Prisma schema at `backend/prisma/schema.prisma` with 10 models (User, ConnectedAccount, Topic, Content, Video, Post, Analytics, AffiliateLink, AuditLog).
+- BullMQ queues: `content-discovery`, `video-creation`, `post-scheduling` — all require Redis.
+- WebSocket gateway at `backend/src/events/` for real-time updates.
+- Frontend uses Next.js 14 App Router with ShadCN UI, Recharts for analytics, Zustand for auth state.
