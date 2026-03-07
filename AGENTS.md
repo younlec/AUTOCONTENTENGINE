@@ -28,3 +28,17 @@ AutoContent Engine — a NestJS backend SaaS platform for content discovery, cre
 - BullMQ queues (content-discovery, video-creation, post-scheduling) silently fail to connect if Redis is down; the app still starts but queue-dependent features won't work.
 - AI generation endpoints return mock content when `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` are set to placeholder values (the default `.env`).
 - The `.env` file has working dev defaults; no external secrets are needed for local development.
+
+### Frontend (Next.js)
+- Located at `frontend/`. Runs on port 3000.
+- API requests proxy to `http://localhost:4000` via Next.js rewrites in `next.config.js`.
+- Auth uses mock fallback: when the backend API is unreachable, login/register still works with mock tokens stored in `localStorage`.
+- Dashboard routes live under `src/app/(dashboard)/dashboard/` (route group pattern). The URL path is `/dashboard/overview`, `/dashboard/content`, etc.
+- ShadCN UI components are in `src/components/ui/`; layout components in `src/components/layout/`.
+
+| Task | Command (from `frontend/`) |
+|------|----------------------------|
+| Install deps | `npm install` |
+| Lint | `npm run lint` |
+| Build | `npm run build` |
+| Dev server | `npm run dev` |
