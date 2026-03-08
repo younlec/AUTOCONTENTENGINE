@@ -59,8 +59,14 @@ AutoContent Engine — a full-stack SaaS platform for content discovery, creatio
 | Build | `npm run build` |
 | Dev server | `npm run dev` |
 
+### WebSocket (Real-time)
+- Backend: Socket.IO gateway at `backend/src/events/events.gateway.ts` broadcasts events for trends, content, posts, analytics, video progress.
+- Frontend: `socket.io-client` singleton at `frontend/src/lib/socket.ts`; hooks at `frontend/src/hooks/use-socket.ts` (`useSocket`, `useSocketEvent`).
+- Dashboard layout auto-connects WebSocket and subscribes to user channel.
+- Events: `trends.discovered`, `content.generated`, `content.statusChanged`, `post.published`, `post.statusChanged`, `analytics.updated`, `video.progress`.
+
 ### Docker (production)
-- `docker-compose.yml` at repo root defines: postgres, redis, backend, frontend, nginx.
+- `docker-compose.yml` at repo root defines: postgres, redis, backend, workers, frontend, nginx.
 - For **local dev**, use native PostgreSQL + Redis (see above) rather than Docker containers.
 - Docker is only needed for production builds: `sudo docker compose up -d`
 

@@ -46,6 +46,24 @@ services:
       redis:
         condition: service_healthy
 
+  workers:
+    build:
+      context: .
+      dockerfile: docker/worker.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/autocontent
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-placeholder}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-sk-ant-placeholder}
+      TREND_DISCOVERY_INTERVAL_MS: ${TREND_DISCOVERY_INTERVAL_MS:-1800000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   frontend:
     build:
       context: .
@@ -54,6 +72,7 @@ services:
       - '3000:3000'
     environment:
       NEXT_PUBLIC_API_URL: http://backend:4000
+      NEXT_PUBLIC_WS_URL: http://backend:4000
     depends_on:
       - backend
 
