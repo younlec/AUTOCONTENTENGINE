@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   BarChart3,
   Eye,
@@ -35,6 +36,7 @@ import {
   AreaChart,
   Area,
 } from "recharts";
+import { useSocketEvent } from "@/hooks/use-socket";
 
 const stats = [
   {
@@ -150,6 +152,21 @@ function getStatusVariant(status: string) {
 }
 
 export default function OverviewPage() {
+  const [liveTopics, setLiveTopics] = useState<any[]>([]);
+  const [livePostUpdates, setLivePostUpdates] = useState<any[]>([]);
+
+  useSocketEvent('trends.discovered', (data: { topics: any[] }) => {
+    setLiveTopics(prev => [...data.topics, ...prev].slice(0, 5));
+  });
+
+  useSocketEvent('post.published', (data: any) => {
+    setLivePostUpdates(prev => [data, ...prev].slice(0, 10));
+  });
+
+  useSocketEvent('analytics.updated', () => {
+    // Trigger refetch of analytics data in a real implementation
+  });
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -295,6 +312,40 @@ export default function OverviewPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {liveTopics.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              </span>
+              <CardTitle className="text-base">Live Activity</CardTitle>
+            </div>
+            <CardDescription>Real-time updates from your content pipeline</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {liveTopics.map((topic: any, i: number) => (
+                <div key={topic.id || i} className="flex items-center gap-2 text-sm">
+                  <Badge variant="secondary">New Trend</Badge>
+                  <span className="truncate">{topic.title}</span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    Score: {typeof topic.score === 'number' ? topic.score.toFixed(1) : topic.score}
+                  </span>
+                </div>
+              ))}
+              {livePostUpdates.map((update: any, i: number) => (
+                <div key={update.postId || i} className="flex items-center gap-2 text-sm">
+                  <Badge>Published</Badge>
+                  <span>Post published to {update.platform}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

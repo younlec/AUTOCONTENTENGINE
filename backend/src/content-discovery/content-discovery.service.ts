@@ -1,11 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class ContentDiscoveryService {
   private readonly logger = new Logger(ContentDiscoveryService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventsGateway: EventsGateway,
+  ) {}
 
   async fetchTrendingTopics() {
     this.logger.log('Fetching trending topics...');
@@ -61,6 +65,12 @@ export class ContentDiscoveryService {
     const topics = await Promise.all(
       sampleTopics.map((topic) => this.prisma.topic.create({ data: topic })),
     );
+
+    // Emit real-time event for new trends
+    this.eventsGateway.emitTrendDiscovered({
+      topics,
+      discoveredAt: new Date().toISOString(),
+    });
 
     return topics;
   }

@@ -4,13 +4,13 @@ import { SchedulingController } from './scheduling.controller';
 import { SchedulingService } from './scheduling.service';
 import { SchedulingProcessor } from './scheduling.processor';
 import { PublishingModule } from '../publishing/publishing.module';
+import { EventsModule } from '../events/events.module';
 
 @Module({
   imports: [
-    BullModule.registerQueue({
-      name: 'post-scheduling',
-    }),
+    BullModule.registerQueue({ name: 'post-scheduling' }),
     PublishingModule,
+    EventsModule,
   ],
   controllers: [SchedulingController],
   providers: [SchedulingService, SchedulingProcessor],

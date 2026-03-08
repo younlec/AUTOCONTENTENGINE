@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { useAuth } from "@/hooks/use-auth";
+import { useSocket } from "@/hooks/use-socket";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, hydrate } = useAuth();
+  const { isAuthenticated, hydrate, user } = useAuth();
+  const { subscribe } = useSocket();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -25,6 +27,12 @@ export default function DashboardLayout({
       router.push("/login");
     }
   }, [mounted, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (mounted && isAuthenticated && user) {
+      subscribe(`user:${user.id}`);
+    }
+  }, [mounted, isAuthenticated, user, subscribe]);
 
   if (!mounted || !isAuthenticated) {
     return (
