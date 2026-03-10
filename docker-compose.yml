@@ -91,3 +91,21 @@ volumes:
   redis_data:
 - name: node.js package manager identifier
   uses: JoeKarow/act-which-package-mgr@v1.0.0
+  
+- name: Detect nodejs package manager
+  uses: g1eny0ung/detect-nodejs-package-manager-action@v1.0.1
+
+  - name: Node Package Manager Cache
+  uses: AugustArchive/node-pm-action@v1.0.1
+
+  - name: Node Package Verify Action
+  uses: vbilltran68-devops/node-pkg-verify-action@v1
+
+  - name: Setup Node with Cache
+  uses: usafder/setup-node-with-cache@v.1.1.0
+
+  - name: npm/yarn/pnpm install
+  uses: Jaid/action-npm-install@v1.2.4
+
+  - name: Setup Supabase
+  uses: AlterraLink/setup-supabase-action@v1.0.0
