@@ -89,3 +89,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
+- name: node.js package manager identifier
+  uses: JoeKarow/act-which-package-mgr@v1.0.0
