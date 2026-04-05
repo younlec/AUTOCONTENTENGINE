@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DerivBot name="ProfitableDerivBot" version="1.1">
+  <Description>Low-risk Deriv bot profile with strict signal quality filters and a 70% target win-rate policy.</Description>
+
+  <Config>
+    <RiskProfile>LOW</RiskProfile>
+    <TargetWinRate>0.70</TargetWinRate>
+    <Symbol>R_100</Symbol>
+    <TickLookback>80</TickLookback>
+    <PollingMs>12000</PollingMs>
+    <BaseStake>0.35</BaseStake>
+    <MaxStake>1.50</MaxStake>
+    <PayoutRatio>0.85</PayoutRatio>
+    <Duration unit="t">7</Duration>
+    <MinConfidence>0.72</MinConfidence>
+    <MaxDailyLoss>12</MaxDailyLoss>
+    <TakeProfit>18</TakeProfit>
+    <MaxConsecutiveLosses>2</MaxConsecutiveLosses>
+    <CooldownMs>180000</CooldownMs>
+  </Config>
+
+  <Strategy>
+    <SignalEngine type="ema-crossover">
+      <ShortPeriod>5</ShortPeriod>
+      <LongPeriod>14</LongPeriod>
+      <VolatilityMethod>standard-deviation</VolatilityMethod>
+      <ConfidenceNormalization divisor="3">absolute-diff-over-volatility</ConfidenceNormalization>
+      <DirectionRule>
+        <When condition="shortEma &gt;= longEma">CALL</When>
+        <Else>PUT</Else>
+      </DirectionRule>
+    </SignalEngine>
+
+    <EntryRules>
+      <Rule id="min-confidence" condition="signal.confidence &gt;= config.minConfidence" />
+      <Rule id="stake-positive" condition="stake &gt; 0" />
+      <Rule id="target-win-rate-gate" condition="estimatedWinRate &gt;= config.targetWinRate" />
+    </EntryRules>
+
+    <StakeManagement type="conservative-fractional">
+      <WinRateDefaults>
+        <IfTradesBelow>30</IfTradesBelow>
+        <EstimatedWinRate>0.70</EstimatedWinRate>
+      </WinRateDefaults>
+      <StakeScaleByConfidence>true</StakeScaleByConfidence>
+      <MaxRiskPerTradePercent>0.5</MaxRiskPerTradePercent>
+      <Formula>stake = clamp(baseStake * (1 + (confidence - 0.70)), baseStake, maxStake)</Formula>
+    </StakeManagement>
+  </Strategy>
+
+  <RiskManagement>
+    <Stop condition="sessionProfit &lt;= -maxDailyLoss">halt-trading</Stop>
+    <Stop condition="sessionProfit &gt;= takeProfit">halt-trading</Stop>
+    <Guard condition="estimatedWinRate &lt; targetWinRate">no-new-trades</Guard>
+    <Cooldown condition="consecutiveLosses &gt;= maxConsecutiveLosses" durationRef="CooldownMs">reset-consecutive-losses</Cooldown>
+  </RiskManagement>
+
+  <Execution>
+    <TradeDirection source="signal.direction" />
+    <ContractType>RiseFall</ContractType>
+    <Fields>
+      <Field name="symbol" source="config.symbol" />
+      <Field name="direction" source="signal.direction" />
+      <Field name="stake" source="calculated.stake" />
+      <Field name="duration" source="config.duration" />
+      <Field name="durationUnit" source="config.durationUnit" />
+      <Field name="confidence" source="signal.confidence" />
+    </Fields>
+  </Execution>
+
+  <State>
+    <SessionProfit>0</SessionProfit>
+    <ConsecutiveLosses>0</ConsecutiveLosses>
+    <TotalTrades>0</TotalTrades>
+    <Wins>0</Wins>
+    <Losses>0</Losses>
+  </State>
+</DerivBot>
