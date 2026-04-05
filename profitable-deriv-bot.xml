@@ -1,0 +1,324 @@
+<xml xmlns="http://www.w3.org/1999/xhtml" collection="false">
+  <!-- Conservative Deriv DBot template. Profit is never guaranteed; test on demo first. -->
+  <variables>
+    <variable type="" id="base_stake">Base Stake</variable>
+    <variable type="" id="current_stake">Current Stake</variable>
+    <variable type="" id="profit_target">Profit Target</variable>
+    <variable type="" id="loss_streak">Loss Streak</variable>
+    <variable type="" id="reference_digit">Reference Digit</variable>
+  </variables>
+  <block type="trade" id="trade_root" x="0" y="0">
+    <field name="MARKET_LIST">volidx</field>
+    <field name="SUBMARKET_LIST">random_index</field>
+    <field name="SYMBOL_LIST">R_50</field>
+    <field name="TRADETYPECAT_LIST">digits</field>
+    <field name="TRADETYPE_LIST">matchesdiffers</field>
+    <field name="TYPE_LIST">DIGITDIFF</field>
+    <field name="CANDLEINTERVAL_LIST">60</field>
+    <field name="TIME_MACHINE_ENABLED">FALSE</field>
+    <field name="RESTARTONERROR">TRUE</field>
+    <statement name="INITIALIZATION">
+      <block type="text_print" id="init_notice">
+        <value name="TEXT">
+          <shadow type="text" id="init_notice_shadow">
+            <field name="TEXT">Conservative digit-differ bot loaded. Test on demo first.</field>
+          </shadow>
+        </value>
+        <next>
+          <block type="variables_set" id="set_base_stake">
+            <field name="VAR" id="base_stake" variabletype="">Base Stake</field>
+            <value name="VALUE">
+              <block type="math_number" id="base_stake_value">
+                <field name="NUM">0.35</field>
+              </block>
+            </value>
+            <next>
+              <block type="variables_set" id="set_current_stake">
+                <field name="VAR" id="current_stake" variabletype="">Current Stake</field>
+                <value name="VALUE">
+                  <block type="variables_get" id="get_base_stake_for_current">
+                    <field name="VAR" id="base_stake" variabletype="">Base Stake</field>
+                  </block>
+                </value>
+                <next>
+                  <block type="variables_set" id="set_profit_target">
+                    <field name="VAR" id="profit_target" variabletype="">Profit Target</field>
+                    <value name="VALUE">
+                      <block type="math_number" id="profit_target_value">
+                        <field name="NUM">5</field>
+                      </block>
+                    </value>
+                    <next>
+                      <block type="variables_set" id="set_loss_streak">
+                        <field name="VAR" id="loss_streak" variabletype="">Loss Streak</field>
+                        <value name="VALUE">
+                          <block type="math_number" id="loss_streak_zero">
+                            <field name="NUM">0</field>
+                          </block>
+                        </value>
+                        <next>
+                          <block type="variables_set" id="set_reference_digit">
+                            <field name="VAR" id="reference_digit" variabletype="">Reference Digit</field>
+                            <value name="VALUE">
+                              <block type="math_number" id="reference_digit_default">
+                                <field name="NUM">5</field>
+                              </block>
+                            </value>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+    <statement name="SUBMARKET">
+      <block type="tradeOptions" id="trade_options">
+        <field name="DURATIONTYPE_LIST">t</field>
+        <field name="CURRENCY_LIST">USD</field>
+        <value name="DURATION">
+          <block type="math_number" id="duration_ticks">
+            <field name="NUM">1</field>
+          </block>
+        </value>
+        <value name="AMOUNT">
+          <block type="variables_get" id="get_current_stake_for_amount">
+            <field name="VAR" id="current_stake" variabletype="">Current Stake</field>
+          </block>
+        </value>
+        <value name="PREDICTION">
+          <block type="variables_get" id="get_reference_digit_for_prediction">
+            <field name="VAR" id="reference_digit" variabletype="">Reference Digit</field>
+          </block>
+        </value>
+      </block>
+    </statement>
+  </block>
+  <block type="before_purchase" id="before_purchase_root" x="0" y="220">
+    <statement name="BEFOREPURCHASE_STACK">
+      <block type="variables_set" id="capture_reference_digit">
+        <field name="VAR" id="reference_digit" variabletype="">Reference Digit</field>
+        <value name="VALUE">
+          <block type="last_digit" id="current_last_digit"></block>
+        </value>
+        <next>
+          <block type="notify" id="reference_digit_notice">
+            <field name="NOTIFICATION_TYPE">warn</field>
+            <field name="NOTIFICATION_SOUND">silent</field>
+            <value name="MESSAGE">
+              <block type="text_join" id="reference_digit_message">
+                <mutation items="2"></mutation>
+                <value name="ADD0">
+                  <block type="text" id="reference_digit_label">
+                    <field name="TEXT">Digit differ against previous digit: </field>
+                  </block>
+                </value>
+                <value name="ADD1">
+                  <block type="variables_get" id="get_reference_digit_for_message">
+                    <field name="VAR" id="reference_digit" variabletype="">Reference Digit</field>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <next>
+              <block type="purchase" id="purchase_digit_diff">
+                <field name="PURCHASE_LIST">DIGITDIFF</field>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="after_purchase" id="after_purchase_root" x="0" y="440">
+    <statement name="AFTERPURCHASE_STACK">
+      <block type="controls_if" id="win_or_loss_branch">
+        <mutation else="1"></mutation>
+        <value name="IF0">
+          <block type="contract_check_result" id="check_win">
+            <field name="CHECK_RESULT">win</field>
+          </block>
+        </value>
+        <statement name="DO0">
+          <block type="notify" id="win_notice">
+            <field name="NOTIFICATION_TYPE">success</field>
+            <field name="NOTIFICATION_SOUND">silent</field>
+            <value name="MESSAGE">
+              <block type="text_join" id="win_message">
+                <mutation items="2"></mutation>
+                <value name="ADD0">
+                  <block type="text" id="win_label">
+                    <field name="TEXT">Win: </field>
+                  </block>
+                </value>
+                <value name="ADD1">
+                  <block type="read_details" id="win_amount_detail">
+                    <field name="DETAIL_INDEX">4</field>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <next>
+              <block type="variables_set" id="reset_current_stake_after_win">
+                <field name="VAR" id="current_stake" variabletype="">Current Stake</field>
+                <value name="VALUE">
+                  <block type="variables_get" id="get_base_stake_after_win">
+                    <field name="VAR" id="base_stake" variabletype="">Base Stake</field>
+                  </block>
+                </value>
+                <next>
+                  <block type="variables_set" id="reset_loss_streak_after_win">
+                    <field name="VAR" id="loss_streak" variabletype="">Loss Streak</field>
+                    <value name="VALUE">
+                      <block type="math_number" id="loss_streak_reset_value">
+                        <field name="NUM">0</field>
+                      </block>
+                    </value>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+        <statement name="ELSE">
+          <block type="notify" id="loss_notice">
+            <field name="NOTIFICATION_TYPE">error</field>
+            <field name="NOTIFICATION_SOUND">silent</field>
+            <value name="MESSAGE">
+              <block type="text_join" id="loss_message">
+                <mutation items="2"></mutation>
+                <value name="ADD0">
+                  <block type="text" id="loss_label">
+                    <field name="TEXT">Loss: </field>
+                  </block>
+                </value>
+                <value name="ADD1">
+                  <block type="math_single" id="loss_amount_abs">
+                    <field name="OP">ABS</field>
+                    <value name="NUM">
+                      <shadow type="math_number" id="loss_amount_shadow">
+                        <field name="NUM">0</field>
+                      </shadow>
+                      <block type="read_details" id="loss_amount_detail">
+                        <field name="DETAIL_INDEX">4</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <next>
+              <block type="variables_set" id="reset_current_stake_after_loss">
+                <field name="VAR" id="current_stake" variabletype="">Current Stake</field>
+                <value name="VALUE">
+                  <block type="variables_get" id="get_base_stake_after_loss">
+                    <field name="VAR" id="base_stake" variabletype="">Base Stake</field>
+                  </block>
+                </value>
+                <next>
+                  <block type="math_change" id="increment_loss_streak">
+                    <field name="VAR" id="loss_streak" variabletype="">Loss Streak</field>
+                    <value name="DELTA">
+                      <shadow type="math_number" id="loss_increment_shadow">
+                        <field name="NUM">1</field>
+                      </shadow>
+                    </value>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+        <next>
+          <block type="controls_if" id="profit_target_branch">
+            <mutation else="1"></mutation>
+            <value name="IF0">
+              <block type="logic_compare" id="check_profit_target_not_reached">
+                <field name="OP">LT</field>
+                <value name="A">
+                  <block type="total_profit" id="current_total_profit"></block>
+                </value>
+                <value name="B">
+                  <block type="variables_get" id="get_profit_target">
+                    <field name="VAR" id="profit_target" variabletype="">Profit Target</field>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <statement name="DO0">
+              <block type="controls_if" id="loss_streak_branch">
+                <mutation else="1"></mutation>
+                <value name="IF0">
+                  <block type="logic_compare" id="check_loss_streak_limit">
+                    <field name="OP">LT</field>
+                    <value name="A">
+                      <block type="variables_get" id="get_loss_streak">
+                        <field name="VAR" id="loss_streak" variabletype="">Loss Streak</field>
+                      </block>
+                    </value>
+                    <value name="B">
+                      <block type="math_number" id="loss_streak_limit_value">
+                        <field name="NUM">3</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <statement name="DO0">
+                  <block type="timeout" id="retry_timeout">
+                    <statement name="TIMEOUTSTACK">
+                      <block type="trade_again" id="trade_again_block"></block>
+                    </statement>
+                    <value name="SECONDS">
+                      <shadow type="math_number" id="retry_timeout_shadow">
+                        <field name="NUM">5</field>
+                      </shadow>
+                    </value>
+                  </block>
+                </statement>
+                <statement name="ELSE">
+                  <block type="text_print" id="loss_streak_stop_message">
+                    <value name="TEXT">
+                      <block type="text_join" id="loss_streak_stop_join">
+                        <mutation items="2"></mutation>
+                        <value name="ADD0">
+                          <block type="text" id="loss_streak_stop_label">
+                            <field name="TEXT">Stopped after 3 consecutive losses. Total profit: </field>
+                          </block>
+                        </value>
+                        <value name="ADD1">
+                          <block type="total_profit" id="loss_streak_stop_profit"></block>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </statement>
+              </block>
+            </statement>
+            <statement name="ELSE">
+              <block type="text_print" id="profit_target_message">
+                <value name="TEXT">
+                  <block type="text_join" id="profit_target_join">
+                    <mutation items="2"></mutation>
+                    <value name="ADD0">
+                      <block type="text" id="profit_target_label">
+                        <field name="TEXT">Profit target reached. Total profit: </field>
+                      </block>
+                    </value>
+                    <value name="ADD1">
+                      <block type="total_profit" id="profit_target_total_profit"></block>
+                    </value>
+                  </block>
+                </value>
+              </block>
+            </statement>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="during_purchase" id="during_purchase_root" x="0" y="760"></block>
+</xml>
