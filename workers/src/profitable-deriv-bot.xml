@@ -1,20 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<DerivBot name="ProfitableDerivBot" version="1.0">
-  <Description>Configurable Deriv bot strategy with signal filtering, dynamic staking, and risk controls.</Description>
+<DerivBot name="ProfitableDerivBot" version="1.1">
+  <Description>Low-risk Deriv bot profile with strict signal quality filters and a 70% target win-rate policy.</Description>
 
   <Config>
+    <RiskProfile>LOW</RiskProfile>
+    <TargetWinRate>0.70</TargetWinRate>
     <Symbol>R_100</Symbol>
-    <TickLookback>40</TickLookback>
-    <PollingMs>8000</PollingMs>
-    <BaseStake>1</BaseStake>
-    <MaxStake>10</MaxStake>
+    <TickLookback>80</TickLookback>
+    <PollingMs>12000</PollingMs>
+    <BaseStake>0.35</BaseStake>
+    <MaxStake>1.50</MaxStake>
     <PayoutRatio>0.85</PayoutRatio>
-    <Duration unit="t">5</Duration>
-    <MinConfidence>0.58</MinConfidence>
-    <MaxDailyLoss>50</MaxDailyLoss>
-    <TakeProfit>80</TakeProfit>
-    <MaxConsecutiveLosses>4</MaxConsecutiveLosses>
-    <CooldownMs>45000</CooldownMs>
+    <Duration unit="t">7</Duration>
+    <MinConfidence>0.72</MinConfidence>
+    <MaxDailyLoss>12</MaxDailyLoss>
+    <TakeProfit>18</TakeProfit>
+    <MaxConsecutiveLosses>2</MaxConsecutiveLosses>
+    <CooldownMs>180000</CooldownMs>
   </Config>
 
   <Strategy>
@@ -32,22 +34,24 @@
     <EntryRules>
       <Rule id="min-confidence" condition="signal.confidence &gt;= config.minConfidence" />
       <Rule id="stake-positive" condition="stake &gt; 0" />
+      <Rule id="target-win-rate-gate" condition="estimatedWinRate &gt;= config.targetWinRate" />
     </EntryRules>
 
-    <StakeManagement type="kelly-fractional">
+    <StakeManagement type="conservative-fractional">
       <WinRateDefaults>
-        <IfTradesBelow>10</IfTradesBelow>
-        <EstimatedWinRate>0.55</EstimatedWinRate>
+        <IfTradesBelow>30</IfTradesBelow>
+        <EstimatedWinRate>0.70</EstimatedWinRate>
       </WinRateDefaults>
-      <KellyFractionMultiplier>0.5</KellyFractionMultiplier>
-      <KellyCap>0.2</KellyCap>
-      <Formula>stake = clamp(baseStake * (1 + kellyFraction * 4 * confidence), baseStake, maxStake)</Formula>
+      <StakeScaleByConfidence>true</StakeScaleByConfidence>
+      <MaxRiskPerTradePercent>0.5</MaxRiskPerTradePercent>
+      <Formula>stake = clamp(baseStake * (1 + (confidence - 0.70)), baseStake, maxStake)</Formula>
     </StakeManagement>
   </Strategy>
 
   <RiskManagement>
     <Stop condition="sessionProfit &lt;= -maxDailyLoss">halt-trading</Stop>
     <Stop condition="sessionProfit &gt;= takeProfit">halt-trading</Stop>
+    <Guard condition="estimatedWinRate &lt; targetWinRate">no-new-trades</Guard>
     <Cooldown condition="consecutiveLosses &gt;= maxConsecutiveLosses" durationRef="CooldownMs">reset-consecutive-losses</Cooldown>
   </RiskManagement>
 
