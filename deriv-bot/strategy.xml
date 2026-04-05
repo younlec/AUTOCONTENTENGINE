@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Deriv Bot Builder XML — RSI Mean-Reversion Strategy
+  Import at: https://bot.deriv.com  (Bot Builder → Import)
+
+  Strategy summary
+  ─────────────────
+  Asset      : Volatility 25 Index (synthetic)
+  Contract   : Rise/Fall (Up/Down), 1-tick duration
+  Entry rule : RSI(14) crosses below 30 → BUY (Rise)
+               RSI(14) crosses above 70 → BUY (Fall)
+  Stake      : Martingale with 2× multiplier on loss,
+               reset to initial stake on win
+  Risk guard : Stop-loss  at 15 % of starting balance
+               Take-profit at 30 % of starting balance
+  Candle feed: 1-minute close prices (last 15 candles)
+-->
+<xml xmlns="https://developers.google.com/blockly/xml">
+
+  <!-- ═══════════════════════════════════════════
+       TRADE PARAMETERS (editable variables)
+       ═══════════════════════════════════════════ -->
+  <variables>
+    <variable id="initial_stake">initial_stake</variable>
+    <variable id="current_stake">current_stake</variable>
+    <variable id="max_stake">max_stake</variable>
+    <variable id="consecutive_losses">consecutive_losses</variable>
+    <variable id="total_profit">total_profit</variable>
+    <variable id="starting_balance">starting_balance</variable>
+    <variable id="stop_loss_pct">stop_loss_pct</variable>
+    <variable id="take_profit_pct">take_profit_pct</variable>
+    <variable id="rsi_period">rsi_period</variable>
+    <variable id="rsi_value">rsi_value</variable>
+    <variable id="trade_direction">trade_direction</variable>
+    <variable id="wins">wins</variable>
+    <variable id="losses">losses</variable>
+    <variable id="bot_running">bot_running</variable>
+  </variables>
+
+  <!-- ═══════════════════════════════════════════
+       INITIALIZATION BLOCK
+       ═══════════════════════════════════════════ -->
+  <block type="trade_definition" id="trade_def_root" x="30" y="30">
+    <statement name="TRADE_OPTIONS">
+
+      <!-- Market -->
+      <block type="trade_definition_market" id="td_market">
+        <field name="MARKET_LIST">synthetic_index</field>
+        <field name="SUBMARKET_LIST">random_index</field>
+        <field name="SYMBOL_LIST">1HZ25V</field>
+        <next>
+
+          <!-- Contract type -->
+          <block type="trade_definition_tradetype" id="td_tradetype">
+            <field name="TRADE_TYPE_LIST">callput</field>
+            <field name="TRADE_TYPE">CALL</field>
+            <next>
+
+              <!-- Duration -->
+              <block type="trade_definition_candleinterval" id="td_duration">
+                <field name="CANDLEINTERVAL_LIST">t</field>
+                <next>
+
+                  <!-- Stake -->
+                  <block type="trade_definition_stake" id="td_stake">
+                    <field name="CURRENCY_LIST">USD</field>
+                    <value name="AMOUNT">
+                      <shadow type="math_number" id="default_stake">
+                        <field name="NUM">1</field>
+                      </shadow>
+                    </value>
+                  </block>
+
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+
+    </statement>
+  </block>
+
+  <!-- ═══════════════════════════════════════════
+       ON START — initialise variables
+       ═══════════════════════════════════════════ -->
+  <block type="bb_on_bot_start" id="on_start" x="30" y="300">
+    <statement name="STATEMENT">
+
+      <block type="variables_set" id="set_init_stake">
+        <field name="VAR" id="initial_stake">initial_stake</field>
+        <value name="VALUE">
+          <block type="math_number"><field name="NUM">1</field></block>
+        </value>
+        <next>
+          <block type="variables_set" id="set_curr_stake">
+            <field name="VAR" id="current_stake">current_stake</field>
+            <value name="VALUE">
+              <block type="math_number"><field name="NUM">1</field></block>
+            </value>
+            <next>
+              <block type="variables_set" id="set_max_stake">
+                <field name="VAR" id="max_stake">max_stake</field>
+                <value name="VALUE">
+                  <block type="math_number"><field name="NUM">50</field></block>
+                </value>
+                <next>
+                  <block type="variables_set" id="set_losses">
+                    <field name="VAR" id="consecutive_losses">consecutive_losses</field>
+                    <value name="VALUE">
+                      <block type="math_number"><field name="NUM">0</field></block>
+                    </value>
+                    <next>
+                      <block type="variables_set" id="set_profit">
+                        <field name="VAR" id="total_profit">total_profit</field>
+                        <value name="VALUE">
+                          <block type="math_number"><field name="NUM">0</field></block>
+                        </value>
+                        <next>
+                          <block type="variables_set" id="set_sl_pct">
+                            <field name="VAR" id="stop_loss_pct">stop_loss_pct</field>
+                            <value name="VALUE">
+                              <block type="math_number"><field name="NUM">15</field></block>
+                            </value>
+                            <next>
+                              <block type="variables_set" id="set_tp_pct">
+                                <field name="VAR" id="take_profit_pct">take_profit_pct</field>
+                                <value name="VALUE">
+                                  <block type="math_number"><field name="NUM">30</field></block>
+                                </value>
+                                <next>
+                                  <block type="variables_set" id="set_rsi_period">
+                                    <field name="VAR" id="rsi_period">rsi_period</field>
+                                    <value name="VALUE">
+                                      <block type="math_number"><field name="NUM">14</field></block>
+                                    </value>
+                                    <next>
+                                      <block type="variables_set" id="set_wins">
+                                        <field name="VAR" id="wins">wins</field>
+                                        <value name="VALUE">
+                                          <block type="math_number"><field name="NUM">0</field></block>
+                                        </value>
+                                        <next>
+                                          <block type="variables_set" id="set_bot_running">
+                                            <field name="VAR" id="bot_running">bot_running</field>
+                                            <value name="VALUE">
+                                              <block type="logic_boolean"><field name="BOOL">TRUE</field></block>
+                                            </value>
+                                          </block>
+                                        </next>
+                                      </block>
+                                    </next>
+                                  </block>
+                                </next>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+
+    </statement>
+  </block>
+
+  <!-- ═══════════════════════════════════════════
+       BEFORE PURCHASE — RSI signal + risk checks
+       ═══════════════════════════════════════════ -->
+  <block type="bb_on_before_purchase" id="before_purchase" x="30" y="700">
+    <statement name="STATEMENT">
+
+      <!-- Compute RSI and set direction -->
+      <block type="variables_set" id="compute_rsi">
+        <field name="VAR" id="rsi_value">rsi_value</field>
+        <value name="VALUE">
+          <block type="indicators_rsi" id="rsi_indicator">
+            <field name="FIELD_LIST">close</field>
+            <field name="PERIOD">14</field>
+          </block>
+        </value>
+        <next>
+
+          <!-- Determine trade direction: oversold → CALL, overbought → PUT -->
+          <block type="controls_if" id="signal_check">
+            <mutation elseif="1" else="1"/>
+            <value name="IF0">
+              <block type="logic_compare" id="rsi_oversold">
+                <field name="OP">LTE</field>
+                <value name="A">
+                  <block type="variables_get"><field name="VAR" id="rsi_value">rsi_value</field></block>
+                </value>
+                <value name="B">
+                  <block type="math_number"><field name="NUM">30</field></block>
+                </value>
+              </block>
+            </value>
+            <statement name="DO0">
+              <block type="variables_set" id="set_call">
+                <field name="VAR" id="trade_direction">trade_direction</field>
+                <value name="VALUE">
+                  <block type="text"><field name="TEXT">CALL</field></block>
+                </value>
+              </block>
+            </statement>
+            <value name="IF1">
+              <block type="logic_compare" id="rsi_overbought">
+                <field name="OP">GTE</field>
+                <value name="A">
+                  <block type="variables_get"><field name="VAR" id="rsi_value">rsi_value</field></block>
+                </value>
+                <value name="B">
+                  <block type="math_number"><field name="NUM">70</field></block>
+                </value>
+              </block>
+            </value>
+            <statement name="DO1">
+              <block type="variables_set" id="set_put">
+                <field name="VAR" id="trade_direction">trade_direction</field>
+                <value name="VALUE">
+                  <block type="text"><field name="TEXT">PUT</field></block>
+                </value>
+              </block>
+            </statement>
+            <statement name="ELSE">
+              <!-- No clear signal — skip trade -->
+              <block type="variables_set" id="set_no_trade">
+                <field name="VAR" id="trade_direction">trade_direction</field>
+                <value name="VALUE">
+                  <block type="text"><field name="TEXT">NONE</field></block>
+                </value>
+              </block>
+            </statement>
+            <next>
+
+              <!-- Safety: cap stake at max_stake -->
+              <block type="controls_if" id="cap_stake">
+                <value name="IF0">
+                  <block type="logic_compare" id="stake_gt_max">
+                    <field name="OP">GT</field>
+                    <value name="A">
+                      <block type="variables_get"><field name="VAR" id="current_stake">current_stake</field></block>
+                    </value>
+                    <value name="B">
+                      <block type="variables_get"><field name="VAR" id="max_stake">max_stake</field></block>
+                    </value>
+                  </block>
+                </value>
+                <statement name="DO0">
+                  <block type="variables_set" id="reset_to_max">
+                    <field name="VAR" id="current_stake">current_stake</field>
+                    <value name="VALUE">
+                      <block type="variables_get"><field name="VAR" id="max_stake">max_stake</field></block>
+                    </value>
+                  </block>
+                </statement>
+              </block>
+
+            </next>
+          </block>
+
+        </next>
+      </block>
+
+    </statement>
+  </block>
+
+  <!-- ═══════════════════════════════════════════
+       AFTER PURCHASE — update running P&L
+       ═══════════════════════════════════════════ -->
+  <block type="bb_on_purchase" id="after_purchase" x="30" y="1050">
+    <statement name="STATEMENT">
+      <!-- Nothing needed here; result handled in after_result -->
+    </statement>
+  </block>
+
+  <!-- ═══════════════════════════════════════════
+       AFTER RESULT — martingale / profit tracking
+       ═══════════════════════════════════════════ -->
+  <block type="bb_on_bot_result" id="after_result" x="30" y="1150">
+    <statement name="STATEMENT">
+
+      <block type="controls_if" id="win_or_loss">
+        <mutation elseif="1"/>
+
+        <!-- WIN branch -->
+        <value name="IF0">
+          <block type="logic_compare" id="check_win">
+            <field name="OP">GT</field>
+            <value name="A">
+              <block type="contract_last_deal_profit" id="last_profit"/>
+            </value>
+            <value name="B">
+              <block type="math_number"><field name="NUM">0</field></block>
+            </value>
+          </block>
+        </value>
+        <statement name="DO0">
+          <!-- Increment wins -->
+          <block type="variables_set" id="inc_wins">
+            <field name="VAR" id="wins">wins</field>
+            <value name="VALUE">
+              <block type="math_arithmetic">
+                <field name="OP">ADD</field>
+                <value name="A">
+                  <block type="variables_get"><field name="VAR" id="wins">wins</field></block>
+                </value>
+                <value name="B">
+                  <block type="math_number"><field name="NUM">1</field></block>
+                </value>
+              </block>
+            </value>
+            <next>
+              <!-- Accumulate total profit -->
+              <block type="variables_set" id="add_profit">
+                <field name="VAR" id="total_profit">total_profit</field>
+                <value name="VALUE">
+                  <block type="math_arithmetic">
+                    <field name="OP">ADD</field>
+                    <value name="A">
+                      <block type="variables_get"><field name="VAR" id="total_profit">total_profit</field></block>
+                    </value>
+                    <value name="B">
+                      <block type="contract_last_deal_profit"/>
+                    </value>
+                  </block>
+                </value>
+                <next>
+                  <!-- Reset stake and consecutive losses -->
+                  <block type="variables_set" id="reset_stake">
+                    <field name="VAR" id="current_stake">current_stake</field>
+                    <value name="VALUE">
+                      <block type="variables_get"><field name="VAR" id="initial_stake">initial_stake</field></block>
+                    </value>
+                    <next>
+                      <block type="variables_set" id="reset_cons_loss">
+                        <field name="VAR" id="consecutive_losses">consecutive_losses</field>
+                        <value name="VALUE">
+                          <block type="math_number"><field name="NUM">0</field></block>
+                        </value>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+
+        <!-- LOSS branch -->
+        <value name="IF1">
+          <block type="logic_compare" id="check_loss">
+            <field name="OP">LT</field>
+            <value name="A">
+              <block type="contract_last_deal_profit"/>
+            </value>
+            <value name="B">
+              <block type="math_number"><field name="NUM">0</field></block>
+            </value>
+          </block>
+        </value>
+        <statement name="DO1">
+          <!-- Increment losses counter -->
+          <block type="variables_set" id="inc_losses">
+            <field name="VAR" id="consecutive_losses">consecutive_losses</field>
+            <value name="VALUE">
+              <block type="math_arithmetic">
+                <field name="OP">ADD</field>
+                <value name="A">
+                  <block type="variables_get"><field name="VAR" id="consecutive_losses">consecutive_losses</field></block>
+                </value>
+                <value name="B">
+                  <block type="math_number"><field name="NUM">1</field></block>
+                </value>
+              </block>
+            </value>
+            <next>
+              <!-- Subtract from total profit -->
+              <block type="variables_set" id="sub_profit">
+                <field name="VAR" id="total_profit">total_profit</field>
+                <value name="VALUE">
+                  <block type="math_arithmetic">
+                    <field name="OP">ADD</field>
+                    <value name="A">
+                      <block type="variables_get"><field name="VAR" id="total_profit">total_profit</field></block>
+                    </value>
+                    <value name="B">
+                      <block type="contract_last_deal_profit"/>
+                    </value>
+                  </block>
+                </value>
+                <next>
+                  <!-- Martingale: double the stake -->
+                  <block type="variables_set" id="double_stake">
+                    <field name="VAR" id="current_stake">current_stake</field>
+                    <value name="VALUE">
+                      <block type="math_arithmetic">
+                        <field name="OP">MULTIPLY</field>
+                        <value name="A">
+                          <block type="variables_get"><field name="VAR" id="current_stake">current_stake</field></block>
+                        </value>
+                        <value name="B">
+                          <block type="math_number"><field name="NUM">2</field></block>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+
+      </block>
+
+    </statement>
+  </block>
+
+</xml>

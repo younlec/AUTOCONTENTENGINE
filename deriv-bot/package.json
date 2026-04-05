@@ -1,0 +1,20 @@
+{
+  "name": "deriv-rsi-bot",
+  "version": "1.0.0",
+  "description": "RSI mean-reversion trading bot for the Deriv platform",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dry-run": "node bot.js",
+    "test": "node tests/bot.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["deriv", "trading-bot", "rsi", "mean-reversion"],
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {}
+}
